@@ -16,6 +16,66 @@
  모수값 추정을 하기 전에 모의 담금질 기법이 어떻게 돌아가는지에 대해서 설명하고자 한다.  
 ![image](https://t1.daumcdn.net/cfile/tistory/2501553C518D326902)  
 위의 그림은 모의 담금질의 수도코드이다, 이러한 방식으로 모의 담금질은 돌아가는데, 여기서 Schedule[t]라는 것은 Temperature를 정해주는 함수이다. 그리고 VALUE[] 라는 것은 평가 함수의 값이다. 그리고 MAKE-NODE()는 노드를 만들어 주는 함수라고 한다.  
-글로만 써 보았을 때에는 설명하기가 조금 어려워 가져온 코드를 가지고 설명을 하고자 한다.    
-
-
+글로만 써 보았을 때에는 설명하기가 조금 어려워 가져온 코드를 가지고 설명을 하고자 한다. 
+~~~
+ static public void Main (){
+        // Problem: place k objects in an MxN target
+        // plane yielding minimal cost according to
+        // defined objective function
+  
+        // Set of all possible candidate locations
+        String[,] sourceArray = new String[M,N];
+  
+        // Global minimum
+        Solution min = new Solution(Double.MaxValue, null);
+  
+        // Generates random initial candidate solution
+        // before annealing process
+        Solution currentSol = genRandSol();
+  
+        // Continues annealing until reaching minimum
+        // temperature
+        while (T > Tmin) {
+            for (int i=0;i<numIterations;i++){
+  
+                // Reassigns global minimum accordingly
+                if (currentSol.CVRMSE < min.CVRMSE){
+                    min = currentSol;
+                }
+  
+                Solution newSol = neighbor(currentSol);
+                double ap = Math.Pow(Math.E,(currentSol.CVRMSE - newSol.CVRMSE)/T);
+                Random rnd = new Random();
+                if (ap > rnd.Next(0,1)){
+                    currentSol = newSol;
+                }  
+            }
+  
+            T *= alpha; // Decreases T, cooling phase
+        }
+~~~
+C#으로 이루어져 있어서 조금 헷갈렸지만 아무튼 위에서 주어진 수도코드와 비슷하게 작동을 한다.  
+~~~
+  while (T > Tmin) {
+            for (int i=0;i<numIterations;i++){
+  
+                // Reassigns global minimum accordingly
+                if (currentSol.CVRMSE < min.CVRMSE){
+                    min = currentSol;
+                }
+  
+                Solution newSol = neighbor(currentSol);
+                double ap = Math.Pow(Math.E,(currentSol.CVRMSE - newSol.CVRMSE)/T);
+                Random rnd = new Random();
+                if (ap > rnd.Next(0,1)){
+                    currentSol = newSol;
+                }  
+            }
+  
+            T *= alpha; // Decreases T, cooling phase
+        }
+~~~  
+이 부분에서 초기 T가 종료 조건이 만족될때까지 for문이 실행되고, 이 for문에서 numIterations은 현재 T에서 for-루프가 수행되는 횟수이다. 이 횟수는 T아질수록 커지도록 구성되어있다.  
+그리고 이웃해인 neighbor가 더 우수한 경우라고 결정이 되면 newSol이 neighbor이 되어서 진행되고 또 currentSol.CVRMSE - newSol.CVRMSE의 차이는 d가 된다. 이때의 d는 유전 알고리즘의 적합도와 비슷하다고 말 할 수있다. 이러한 방식으로 계속 돌아가면서 마지막에는 초기T를 일정 비율 알파로 감소시킨다. 이것이 모의 담금질의 핵심이다. 초기 T 즉 온도가 계속 냉각율인 알파에 따라서 줄어들면서 점점 더 우수한 해를 찾을 수 있는 것이다. 위에서 말한 것처럼 온도가 클때에는 자유도가 높아져서 해의 값이 정확하지 않지만 점점더 냉각율을 곱해 가면서 이 온도가 낮아지면서 해에 가까운 수를 출력해 낼 수 있다.  
+## 모의 담금질의 이웃해 설정  
+모의 담금질에서 가장 중요한 것은 이웃해 설정이라고 생각한다. 이 이웃해를 어떻게 설정하느냐에 따라서 아마도 모의 담금질의 효율성이 높아지거나 낮아질 것이다. 책에는 이웃해를 정의하는 방법은 3가지라고 나와있다. 삽입,교환,반전이다. 그러나 이 책에서는 경로찾기 문제이기 때문에 내가 구하려고 하는 그래프의 값과는 다르다. 아마도 그래프의 이웃해를 잘 설정하려면 위에서 내가 구했던 식이 1차식의 형태인 y=ax+b의 형태를 띄기 때문에 a와 b의 값을 서로 변환시키거나 아니면 b와 a의 순서를 바꾸어서 이웃해를 설정하여 푸는것도 나쁘지 않은 선택이라고 생각한다.
